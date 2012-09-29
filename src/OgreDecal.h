@@ -21,6 +21,7 @@ namespace OgreDecal
     {
     public:
         /// Pure virtual function to be left implemented by the user for maximum flexbility
+        /// @param triangles An empty list of triangles to be filled with the ones that are inside the AABB
         virtual void findTrianglesInAABB( const Ogre::Vector3& aabbMin, const Ogre::Vector3& aabbMax, std::vector< Triangle >& triangles ) = 0;
     };
     
@@ -59,7 +60,7 @@ namespace OgreDecal
         
         void initialize(Ogre::SceneManager* sceneManager);
         Decal createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos, float width, float height, 
-                          const Ogre::String& materialName, bool flipTexture = false );
+                          const Ogre::String& materialName, bool flipTexture = false, Ogre::ManualObject* decalObject = 0);
         
         void turnDebugOn();
         void turnDebugOff();

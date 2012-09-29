@@ -12,6 +12,7 @@ const bool SHARE_VERTEX_NORMALS = true;
 
 /// Set "true" to save debug drawing information
 /// Should be "false" by default, unless you intend to draw debugging info
+/// You should not enable debug drawing for dynamic decals
 const bool DEBUG_ENABLED = false;
 
 /// OgreMesh constructor
@@ -112,7 +113,7 @@ void DecalGenerator::initialize(Ogre::SceneManager* sceneManager)
 }
 
 /// Add a triangle to the final decal object
-void DecalGenerator::AddTriangle(Ogre::ManualObject* mo, std::vector< int >& points, int p1, int p2, int p3, Ogre::ManualObject* lines )
+void DecalGenerator::AddTriangle(Ogre::ManualObject* decalObject, std::vector< int >& points, int p1, int p2, int p3, Ogre::ManualObject* lines )
 {
     int ai = points[ 0 ];
     int bi = points[ p2 - p1 ];
@@ -120,11 +121,11 @@ void DecalGenerator::AddTriangle(Ogre::ManualObject* mo, std::vector< int >& poi
     
     if (!SHARE_VERTEX_NORMALS)
     {
-        mo->triangle( p1, p2, p3 );
+        decalObject->triangle( p1, p2, p3 );
     }
     else
     {
-        mo->triangle( ai, bi, ci );
+        decalObject->triangle( ai, bi, ci );
     }
     
     /// Debug stuff
@@ -147,10 +148,27 @@ void DecalGenerator::AddTriangle(Ogre::ManualObject* mo, std::vector< int >& poi
     }
 }
 
-/// Generates the decal and returns a Decal object. The caller is responsible for NULL-checking the manual object.
-/// This gigantic function should probably be chopped into smaller bite-sized pieces, but I'm just doo darn lazy.
+/*
+ 
+ Generates the decal and returns a Decal object. The caller is responsible for NULL-checking the manual object.
+ This gigantic function should probably be chopped into smaller bite-sized pieces, but I'm just doo darn lazy.
+ 
+ @param mesh    The mesh to project the decal onto.
+ @param pos     The position of the decal
+ @param width   The width of the decal
+ @param height  The height of the decal
+                Note: The aspect ratio defined by width/height should match the texture, otherwise it will appear stretched.
+ 
+ @param materialName    The name of the material to use for the decal
+ @param flipTexture     Will randomly flip the texture to introduce variety (useful for blood splatter, explosion decals, etc.)
+ @param decalObject     If NULL, this function will automatically create a new manual object (default). Otherwise, it will re-use the one passed in.
+                        For dynamic decals (generating one every frame), it is much more efficient to reuse the same manual object,
+                        as long as the material doesn't change.
+ 
+
+ */
 Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos, float width, float height, 
-                                  const Ogre::String& materialName, bool flipTexture )
+                                  const Ogre::String& materialName, bool flipTexture, Ogre::ManualObject* decalObject )
 {
     
     /// Clear out any old left-over stuff from the fridge.
@@ -655,11 +673,31 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         lines = sceneMgr->createManualObject();
         lines->begin("debug_draw", Ogre::RenderOperation::OT_LINE_LIST);
     }
-
-    Ogre::ManualObject* mo = sceneMgr->createManualObject();
+    
+    /// Create a new manual object if this one doesn't exist
+    if (!decalObject)
+    {
+        decalObject = sceneMgr->createManualObject();
+    }
+    else
+    {
+        /// Make sure the decal object can be dynmically updated
+        if (!decalObject->getDynamic())
+            decalObject->setDynamic( true );
+    }
     
     Ogre::String material = materialName;
-    mo->begin(material, Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    
+    if (decalObject->getDynamic() && decalObject->getNumSections() > 0)
+    {
+         /// Update the existng decal instead of starting a new one
+        decalObject->beginUpdate( 0 );
+    }
+    else
+    {
+         /// Start a new decal
+        decalObject->begin(material, Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    }
     
     /// If we're sharing vertices, then simply set up all of the vertex info ahead of time
     if ( SHARE_VERTEX_NORMALS )
@@ -668,11 +706,10 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         {
             uniqueIter->normal.normalise();
             
-            mo->position( uniqueIter->p );
-            mo->textureCoord( uniqueIter->uvCoord );
-            mo->normal( uniqueIter->normal );
+            decalObject->position( uniqueIter->p );
+            decalObject->textureCoord( uniqueIter->uvCoord );
+            decalObject->normal( uniqueIter->normal );
         }
-        
     }
     
     int p1, p2, p3;
@@ -696,9 +733,9 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
             {
                 if (!SHARE_VERTEX_NORMALS)
                 {
-                    mo->position( uniquePoints[ *iter ].p );
-                    mo->textureCoord( uniquePoints[ *iter ].uvCoord );
-                    mo->normal( norm );
+                    decalObject->position( uniquePoints[ *iter ].p );
+                    decalObject->textureCoord( uniquePoints[ *iter ].uvCoord );
+                    decalObject->normal( norm );
                 }
                 
                 if (t >= 3)
@@ -706,14 +743,14 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
                     ++p2;
                     ++p3;
                     
-                    AddTriangle( mo, pIter->points, p1, p2, p3, lines );
+                    AddTriangle( decalObject, pIter->points, p1, p2, p3, lines );
                 }
                 
                 ++t;
                 
                 if (t == 3)
                 {
-                    AddTriangle( mo, pIter->points, p1, p2, p3, lines );
+                    AddTriangle( decalObject, pIter->points, p1, p2, p3, lines );
                 }
                 
             }
@@ -722,7 +759,7 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         }
     }
     
-    mo->end();
+    decalObject->end();
     
     /// Finish debug drawing stuff
     if (DEBUG_ENABLED)
@@ -738,7 +775,7 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
 
     /// And were done. Phew.
     Decal decal;
-    decal.object = mo;
+    decal.object = decalObject;
     
     return decal;
 }
