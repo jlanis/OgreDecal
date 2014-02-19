@@ -16,16 +16,15 @@ const bool SHARE_VERTEX_NORMALS = true;
 const bool DEBUG_ENABLED = false;
 
 /// OgreMesh constructor
-OgreMesh::OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale )
+OgreMesh::OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale )
 {
-    initialize( mesh, scale );
+    initialize( mesh, position, orientation, scale );
 }
     
 /// Extracts all of the triangles from the mesh and places them in a nice, easy-to-read vector
-/// Note that position and orientaiton are not used here, although any future support for that is welcome.
-void OgreMesh::initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale )
+void OgreMesh::initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale )
 {
-    extractTrianglesFromMesh( meshTriangles, mesh, Ogre::Vector3::ZERO, Ogre::Quaternion::IDENTITY, scale );
+    extractTrianglesFromMesh( meshTriangles, mesh, position, orientation, scale );
 }
 
 /// Finds all of the trangles in the AABB by brute force. 

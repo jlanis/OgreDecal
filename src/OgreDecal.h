@@ -30,9 +30,9 @@ namespace OgreDecal
     {
     public:
         OgreMesh() { }
-        OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale );
+        OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale );
         
-        void initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale );
+        void initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale );
         
         void findTrianglesInAABB( const Ogre::Vector3& aabbMin, const Ogre::Vector3& aabbMax, std::vector< Triangle >& triangles );
         
