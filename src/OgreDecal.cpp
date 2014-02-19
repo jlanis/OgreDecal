@@ -16,16 +16,15 @@ const bool SHARE_VERTEX_NORMALS = true;
 const bool DEBUG_ENABLED = false;
 
 /// OgreMesh constructor
-OgreMesh::OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale )
+OgreMesh::OgreMesh( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale )
 {
-    initialize( mesh, scale );
+    initialize( mesh, position, orientation, scale );
 }
     
 /// Extracts all of the triangles from the mesh and places them in a nice, easy-to-read vector
-/// Note that position and orientaiton are not used here, although any future support for that is welcome.
-void OgreMesh::initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& scale )
+void OgreMesh::initialize( const Ogre::MeshPtr& mesh, const Ogre::Vector3& position, const Ogre::Quaternion& orientation, const Ogre::Vector3& scale )
 {
-    extractTrianglesFromMesh( meshTriangles, mesh, Ogre::Vector3::ZERO, Ogre::Quaternion::IDENTITY, scale );
+    extractTrianglesFromMesh( meshTriangles, mesh, position, orientation, scale );
 }
 
 /// Finds all of the trangles in the AABB by brute force. 
@@ -270,11 +269,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         edgePlanes[i] = Ogre::Vector4(planeN[i].x, planeN[i].y, planeN[i].z, planeR[i].dotProduct( planeN[i] ) );
     }
     
-    Ogre::Vector3 averageNormal(0, 0, 0);
-    
-    double totalPoints = 0;
-    Ogre::Vector3 averagePoint;
-    
     /// Loop through each triangle to find the meaning of life
     for (iter = triangles.begin(); iter != triangles.end(); ++iter)
     {
@@ -352,9 +346,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         {
             Ogre::Vector3 p = polygon_points[i];
             
-            averagePoint += p;
-            ++totalPoints;
-            
             /// Make sure this point is not "out of bounds"
             if ((p - pos).length() < distanceLimit)
             {
@@ -378,8 +369,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
             }
             
         }
-
-        averageNormal += (n * area);
     }
     
     
@@ -390,10 +379,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
     /// Congratulations. You've made it this far. Half the battle is over. At this point, we have all of our final clipped points.     ///
     /// Now we need to project those points to 2D so we can calculate the UV coordinates. Don't worry, there's more fudge on the way.  ///
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    averageNormal.normalise();
-    
-    averagePoint /= totalPoints;
     
     Ogre::Vector3 projectionPlaneNormal = -averageN;
     
@@ -542,11 +527,14 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         }
     }
     
-    
+    if(!initValues)
+        return Decal();
+
     /// Here we calculate (via fudge factor) the UV edges which are used to determine the UV coords.
     /// This is the fudge motherload.
     /// I could try to explain why we're doing this, but it would just sound like I have no idea what I'm talking about.
     /// Which is probably true.
+
     rightMost = average( average( topRight->uvCoord.x, bottomRight->uvCoord.x ), rightMost );
     leftMost = average( average( topLeft->uvCoord.x, bottomLeft->uvCoord.x ), leftMost );
     
