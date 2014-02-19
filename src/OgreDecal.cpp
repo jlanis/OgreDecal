@@ -541,11 +541,14 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         }
     }
     
-    
+    if(!initValues)
+        return Decal();
+
     /// Here we calculate (via fudge factor) the UV edges which are used to determine the UV coords.
     /// This is the fudge motherload.
     /// I could try to explain why we're doing this, but it would just sound like I have no idea what I'm talking about.
     /// Which is probably true.
+
     rightMost = average( average( topRight->uvCoord.x, bottomRight->uvCoord.x ), rightMost );
     leftMost = average( average( topLeft->uvCoord.x, bottomLeft->uvCoord.x ), leftMost );
     
