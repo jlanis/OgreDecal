@@ -269,11 +269,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         edgePlanes[i] = Ogre::Vector4(planeN[i].x, planeN[i].y, planeN[i].z, planeR[i].dotProduct( planeN[i] ) );
     }
     
-    Ogre::Vector3 averageNormal(0, 0, 0);
-    
-    double totalPoints = 0;
-    Ogre::Vector3 averagePoint;
-    
     /// Loop through each triangle to find the meaning of life
     for (iter = triangles.begin(); iter != triangles.end(); ++iter)
     {
@@ -351,9 +346,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
         {
             Ogre::Vector3 p = polygon_points[i];
             
-            averagePoint += p;
-            ++totalPoints;
-            
             /// Make sure this point is not "out of bounds"
             if ((p - pos).length() < distanceLimit)
             {
@@ -377,8 +369,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
             }
             
         }
-
-        averageNormal += (n * area);
     }
     
     
@@ -389,10 +379,6 @@ Decal DecalGenerator::createDecal( TriangleMesh* mesh, const Ogre::Vector3& pos,
     /// Congratulations. You've made it this far. Half the battle is over. At this point, we have all of our final clipped points.     ///
     /// Now we need to project those points to 2D so we can calculate the UV coordinates. Don't worry, there's more fudge on the way.  ///
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    averageNormal.normalise();
-    
-    averagePoint /= totalPoints;
     
     Ogre::Vector3 projectionPlaneNormal = -averageN;
     
